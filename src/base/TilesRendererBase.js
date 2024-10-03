@@ -202,7 +202,7 @@ export class TilesRendererBase {
 	}
 
 	// Public API
-	update() {
+	update(debug) {
 
 		const stats = this.stats;
 		const lruCache = this.lruCache;
@@ -227,8 +227,11 @@ export class TilesRendererBase {
 		stats.visible = 0;
 		this.frameCount ++;
 
-		markUsedTiles( root, this );
-		markUsedSetLeaves( root, this );
+		if (debug) {
+			console.log("Starting to mark used")
+		}
+		markUsedTiles( root, this, debug );
+		markUsedSetLeaves( root, this, debug );
 		markVisibleTiles( root, this );
 		toggleTiles( root, this );
 
@@ -263,6 +266,7 @@ export class TilesRendererBase {
 
 			if ( tile.__loadingState === FAILED ) {
 
+				console.log(`Failed to load tile ${(tile.content || {}).uri || "UNKNOWN"}`)
 				tile.__loadingState = UNLOADED;
 
 			}
@@ -596,6 +600,7 @@ export class TilesRendererBase {
 
 			}
 
+			console.log(`Tile ${(tile.content || {}).uri || "UNKNOWN"} added successfully. Now moving to UNLOADED for some reason`)
 			t.__loadingState = UNLOADED;
 			t.__loadIndex ++;
 

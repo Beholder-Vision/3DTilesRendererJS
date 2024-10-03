@@ -5,6 +5,22 @@ export const LOADING = 1;
 export const PARSING = 2;
 export const LOADED = 3;
 
+export function loadingStateToString(loadingState) {
+    if (loadingState === FAILED) {
+        return "FAILED"
+    } else if (loadingState === UNLOADED) {
+        return "UNLOADED"
+    } else if (loadingState === LOADING) {
+        return "LOADING"
+    } else if (loadingState === PARSING) {
+        return "PARSING"
+    } else if (loadingState === LOADED) {
+        return "LOADED"
+    }
+
+    return "UNKNOWN"
+}
+
 // https://en.wikipedia.org/wiki/World_Geodetic_System
 // https://en.wikipedia.org/wiki/Flattening
 export const WGS84_RADIUS = 6378137;

@@ -1,4 +1,4 @@
-import { LOADED, FAILED } from './constants.js';
+import { LOADED, FAILED, loadingStateToString } from './constants.js';
 
 function isDownloadFinished( value ) {
 
@@ -38,19 +38,19 @@ function resetFrameState( tile, renderer ) {
 }
 
 // Recursively mark tiles used down to the next tile with content
-function recursivelyMarkUsed( tile, renderer ) {
+function recursivelyMarkUsed( tile, renderer, debug ) {
 
 	renderer.ensureChildrenArePreprocessed( tile );
 
 	resetFrameState( tile, renderer );
-	markUsed( tile, renderer );
+	markUsed( tile, renderer, debug );
 
 	if ( ! tile.__hasRenderableContent ) {
 
 		const children = tile.children;
 		for ( let i = 0, l = children.length; i < l; i ++ ) {
 
-			recursivelyMarkUsed( children[ i ], renderer );
+			recursivelyMarkUsed( children[ i ], renderer, debug );
 
 		}
 
@@ -93,7 +93,7 @@ function recursivelyLoadNextRenderableTiles( tile, renderer ) {
 }
 
 // Mark a tile as being used by current view
-function markUsed( tile, renderer ) {
+function markUsed( tile, renderer, debug ) {
 
 	if ( tile.__used ) {
 
@@ -109,16 +109,23 @@ function markUsed( tile, renderer ) {
 
 		renderer.stats.inFrustum ++;
 
+		if (debug) {
+			console.log(`Tile ${(tile.content || {}).uri || "UNKNOWN"} is used and in frustum`)
+		}
+
 	}
 
 }
 
 // Returns whether the tile can be traversed to the next layer of children by checking the tile metrics
-function canTraverse( tile, renderer ) {
+function canTraverse( tile, renderer, debug ) {
 
 	// If we've met the error requirements then don't load further
 	if ( tile.__error <= renderer.errorTarget ) {
-
+		if (debug) {
+			console.log(`Tile error of ${tile.__error} <= ${renderer.errorTarget}`)
+		}
+		
 		return false;
 
 	}
@@ -166,7 +173,7 @@ export function traverseSet( tile, beforeCb = null, afterCb = null, parent = nul
 }
 
 // Determine which tiles are used by the renderer given the current camera configuration
-export function markUsedTiles( tile, renderer ) {
+export function markUsedTiles( tile, renderer, debug ) {
 
 	// determine frustum set is run first so we can ensure the preprocessing of all the necessary
 	// child tiles has happened here.
@@ -178,13 +185,21 @@ export function markUsedTiles( tile, renderer ) {
 
 		return;
 
-	}
+	}	
 
-	if ( ! canTraverse( tile, renderer ) ) {
+	if ( ! canTraverse( tile, renderer, debug ) ) {
+		if (debug) {
+			console.log(`Stopped at level ${tile.__depth}`, tile)
+		}
+		
 
-		markUsed( tile, renderer );
+		markUsed( tile, renderer, debug );
 		return;
 
+	}
+
+	if (debug) {
+		//console.log("Keeping going in", tile)
 	}
 
 	// Traverse children and see if any children are in view.
@@ -194,7 +209,7 @@ export function markUsedTiles( tile, renderer ) {
 	for ( let i = 0, l = children.length; i < l; i ++ ) {
 
 		const c = children[ i ];
-		markUsedTiles( c, renderer );
+		markUsedTiles( c, renderer, debug );
 		anyChildrenUsed = anyChildrenUsed || isUsedThisFrame( c, renderer.frameCount );
 		anyChildrenInFrustum = anyChildrenInFrustum || c.__inFrustum;
 
@@ -217,7 +232,7 @@ export function markUsedTiles( tile, renderer ) {
 	}
 
 	// wait until after the above condition to mark the traversed tile as used or not
-	markUsed( tile, renderer );
+	markUsed( tile, renderer, debug );
 
 	// If this is a tile that needs children loaded to refine then recursively load child
 	// tiles until error is met
@@ -226,7 +241,7 @@ export function markUsedTiles( tile, renderer ) {
 		for ( let i = 0, l = children.length; i < l; i ++ ) {
 
 			const c = children[ i ];
-			recursivelyMarkUsed( c, renderer );
+			recursivelyMarkUsed( c, renderer, debug );
 
 		}
 
@@ -235,7 +250,7 @@ export function markUsedTiles( tile, renderer ) {
 }
 
 // Traverse and mark the tiles that are at the leaf nodes of the "used" tree.
-export function markUsedSetLeaves( tile, renderer ) {
+export function markUsedSetLeaves( tile, renderer, debug ) {
 
 	const frameCount = renderer.frameCount;
 	if ( ! isUsedThisFrame( tile, frameCount ) ) {
@@ -257,6 +272,11 @@ export function markUsedSetLeaves( tile, renderer ) {
 	if ( ! anyChildrenUsed ) {
 
 		tile.__isLeaf = true;
+		if (debug) {
+			console.log(`Marked tile ${(tile.content || {}).uri || "UNKNOWN"} as leaf`)
+
+			console.log(`Tile loading state is ${loadingStateToString(tile.__loadingState)}`)
+		}
 
 	} else {
 
@@ -265,7 +285,7 @@ export function markUsedSetLeaves( tile, renderer ) {
 		for ( let i = 0, l = children.length; i < l; i ++ ) {
 
 			const c = children[ i ];
-			markUsedSetLeaves( c, renderer );
+			markUsedSetLeaves( c, renderer, debug );
 			childrenWereVisible = childrenWereVisible || c.__wasSetVisible || c.__childrenWereVisible;
 
 			if ( isUsedThisFrame( c, frameCount ) ) {

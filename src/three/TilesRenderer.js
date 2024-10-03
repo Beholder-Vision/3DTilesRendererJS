@@ -382,7 +382,7 @@ export class TilesRenderer extends TilesRendererBase {
 
 	}
 
-	update() {
+	update(debug) {
 
 		// check if the plugins that can block the tile updates require it
 		let needsUpdate = null;
@@ -507,7 +507,7 @@ export class TilesRenderer extends TilesRendererBase {
 
 		}
 
-		super.update();
+		super.update(debug);
 
 		this.dispatchEvent( { type: 'update-after' } );
 
