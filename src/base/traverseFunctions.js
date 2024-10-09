@@ -474,3 +474,7 @@ export function toggleTiles( tile, renderer ) {
 	}
 
 }
+
+export function getTileName( tile ) {
+	return (tile.content || {}).uri || "UNKNOWN"
+}

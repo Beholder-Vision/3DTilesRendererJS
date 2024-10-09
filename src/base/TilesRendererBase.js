@@ -1,8 +1,8 @@
 import { getUrlExtension } from '../utilities/urlExtension.js';
 import { LRUCache } from '../utilities/LRUCache.js';
 import { PriorityQueue } from '../utilities/PriorityQueue.js';
-import { markUsedTiles, toggleTiles, markVisibleTiles, markUsedSetLeaves, traverseSet } from './traverseFunctions.js';
-import { UNLOADED, LOADING, PARSING, LOADED, FAILED } from './constants.js';
+import { markUsedTiles, toggleTiles, markVisibleTiles, markUsedSetLeaves, traverseSet, getTileName } from './traverseFunctions.js';
+import { UNLOADED, LOADING, PARSING, LOADED, FAILED, loadingStateToString } from './constants.js';
 
 const PLUGIN_REGISTERED = Symbol( 'PLUGIN_REGISTERED' );
 
@@ -600,7 +600,9 @@ export class TilesRendererBase {
 
 			}
 
-			console.log(`Tile ${(tile.content || {}).uri || "UNKNOWN"} added successfully. Now moving to UNLOADED for some reason`)
+			const tileName = getTileName(tile)
+			console.log(`Tile ${tileName} added successfully. Was in state ${loadingStateToString(t.__loadingState)} Now moving to UNLOADED for some reason`)
+
 			t.__loadingState = UNLOADED;
 			t.__loadIndex ++;
 
@@ -755,6 +757,7 @@ export class TilesRendererBase {
 
 					if ( lruCache.isFull() && lruCache.computeMemoryUsageCallback( tile ) > 0 ) {
 
+						console.log("TileRendererBase: Removing tile as cache is full")
 						// And if the cache is full due to newly loaded memory then lets discard this tile - it will
 						// be loaded again later from the disk cache if needed.
 						lruCache.remove( tile );
