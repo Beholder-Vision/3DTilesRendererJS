@@ -31,8 +31,10 @@ export function estimateBytesUsed( object ) {
 			const material = c.material;
 			for ( const key in material ) {
 
+				// We support the optional excludeFromTileCache flag for users that want to share textures between
+				// tiles and/or manage textures separately.
 				const value = material[ key ];
-				if ( value && value.isTexture && ! dedupeSet.has( value ) ) {
+				if ( value && value.isTexture && ! dedupeSet.has( value ) && value.excludeFromTileCache !== true ) {
 
 					const { format, type, image } = value;
 					const { width, height } = image;
