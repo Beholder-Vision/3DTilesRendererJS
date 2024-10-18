@@ -847,6 +847,10 @@ export class TilesRenderer extends TilesRendererBase {
 
 				const texture = textures[ i ];
 
+				if (texture.excludeFromTileCache === true) {
+					continue
+				}
+
 				if ( texture.image instanceof ImageBitmap ) {
 
 					texture.image.close();
